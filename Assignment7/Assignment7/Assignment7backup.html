@@ -1,0 +1,98 @@
+<!-- 
+COMP 370 assignment #7: final individual: dodge cube
+Thomas Williamson
+id: 588206
+2021/12/01
+-->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Texture Mapping</title>
+</head>
+<body>
+<canvas id="gl-canvas" width="1080" height="720"> </canvas>
+<img id = "texImage" src = "block.png" hidden></img>
+<img id = "playerImage" src = "sky.png" hidden></img>
+
+<div>
+    <button id = "ButtonX">Rotate X</button>
+    <button id = "ButtonY">Rotate Y</button>
+    <button id = "ButtonZ">Rotate Z</button>
+    <button id = "ButtonT">Toggle Rotatation</button>
+</div>
+
+<script id="vertex-shader" type="x-shader/x-vertex">
+#version 300 es
+
+in vec4 aPosition;
+in vec2 aTexCoord;
+in vec3 aNormal;
+in vec4 aColor;
+
+out vec4 vColor;
+out vec2 vTexCoord;
+
+uniform mat4 uModelViewMatrix;
+uniform mat4 uProjectionMatrix;
+uniform vec4 uAmbientProduct, uDiffuseProduct, uSpecularProduct;
+uniform vec4 uLightPosition;
+uniform float uShininess;
+
+void main()
+{ 
+    vec3 pos = aPosition.xyz;
+
+    //light postion
+    vec3 light = uLightPosition.xyz;
+
+    vec3 L = normalize(light - pos);
+    vec3 E = normalize(-pos);
+    vec3 H = normalize(L + E);
+    vec4 NN = vec4(aNormal,0);
+
+    // Transform vertex normal into eye coordinates
+    vec3 N = normalize((uModelViewMatrix*NN).xyz);
+
+    // Compute terms in the illumination equation
+    vec4 ambient = uAmbientProduct;
+
+    float Kd = max(dot(L, N), 0.0);
+    vec4  diffuse = Kd * uDiffuseProduct;
+
+    float Ks = pow( max(dot(N, H), 0.0), uShininess );
+    vec4 specular = Ks * uSpecularProduct;
+
+    if( dot(L, N) < 0.0 ) {
+         specular = vec4(0.0, 0.0, 0.0, 1.0);
+    }
+    gl_Position = uProjectionMatrix * uModelViewMatrix *aPosition;
+    vTexCoord = aTexCoord;
+    vColor = ambient + diffuse + specular + aColor;
+    vColor.a = 1.0; 
+}
+</script>
+
+<script id="fragment-shader" type="x-shader/x-vertex">
+#version 300 es
+
+precision mediump float;
+in vec4 vColor;
+in vec2 vTexCoord;
+
+out vec4 fColor;
+
+uniform sampler2D uTextureMap;
+uniform vec4 uDiffuseProduct;
+
+void main()
+{
+    vec4 T = texture(uTextureMap, vTexCoord);
+    fColor = T * vColor;
+}
+</script>
+
+<script src="../Common/initShaders.js"></script>
+<script src="../Common/MV.js"></script>
+<script src="Assignment7.js"></script>
+</body>
+</html>
